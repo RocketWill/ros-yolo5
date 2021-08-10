@@ -23,6 +23,7 @@ bool worker_stop = false;
 thread worker_thread;
 vector<sensor_msgs::ImageConstPtr> msg_queue;
 vector<BatchResult> batch_res;
+bool visualize = true;
 
 Config init_model_cfg(string cfg_file, string weights_file, string calib_file) {
     Config config_v5;
@@ -48,7 +49,7 @@ json format_res(vector<BatchResult> batch_res) {
         json j;
         j["id"] = r.id;
         j["score"] = r.prob;
-        j["rect"] = {r.rect.x, r.rect.y};
+        j["rect"] = {r.rect.x, r.rect.y, r.rect.width, r.rect.height};
         objs.push_back(j);
         // std::cout <<"batch "<<i<< " id:" << r.id << " prob:" << r.prob << " rect:" << r.rect << std::endl;
         // cv::rectangle(batch_img[i], r.rect, cv::Scalar(255, 0, 0), 2);
@@ -59,7 +60,7 @@ json format_res(vector<BatchResult> batch_res) {
     return objs;
 }
 
-void worker(Detector* detector, ros::Publisher* pub){
+void worker(Detector* detector, ros::Publisher* pub, image_transport::Publisher* vpub){
   ROS_INFO("Worker start.");
   while(!worker_stop){
     mtx.lock();
@@ -77,12 +78,25 @@ void worker(Detector* detector, ros::Publisher* pub){
       detector->detect({img}, batch_res);
       auto res_json = format_res(batch_res);
       json final_res;
-      final_res["timestamp"] = (msg->header).stamp.toSec();
+      final_res["timestamp"] = to_string((msg->header).stamp.toSec());
       final_res["results"] = res_json;
       std_msgs::String smsg;
       smsg.data = final_res.dump();
-    //   smsg.header.stamp = msg->header->stamp;
+      cout << final_res.dump(4) << endl;
       pub->publish(msg);
+
+
+      if (visualize) {
+          for (auto& det: res_json) {
+            cv::rectangle(img, cv::Rect((int)det["rect"][0], (int)det["rect"][1], (int)det["rect"][2], (int)det["rect"][3]), cv::Scalar(255, 0, 0), 2);
+            std::stringstream stream;
+            stream << std::fixed << std::setprecision(2) << "id:" << det["id"] << "  score:" << det["score"];
+            cv::putText(img, stream.str(), cv::Point((int)det["rect"][0], (int)det["rect"][1] - 5), 0, 0.5, cv::Scalar(0, 0, 255), 2);
+          }
+        sensor_msgs::ImagePtr vmsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();
+        vmsg->header.stamp = msg->header.stamp;
+        vpub->publish(vmsg);
+      }
     }
     catch (cv_bridge::Exception& e){
       ROS_ERROR("Could not convert from '%s', got error :%s", \
@@ -110,13 +124,18 @@ int main(int argc, char **argv){
     image_transport::ImageTransport it(nh);
     image_transport::Subscriber sub = it.subscribe("/camera/raw", 1, image_callback);
 
-    auto cfg = init_model_cfg("./configs/yolov5-5.0/yolov5s6.cfg", "./configs/yolov5-5.0/yolov5s6.weights", "./configs/calibration_images.txt");
+    auto cfg = init_model_cfg("src/perception/src/configs/yolov5-5.0/yolov5s6.cfg", "src/perception/src/configs/yolov5-5.0/yolov5s6.weights", "src/perception/src/configs/calibration_images.txt");
     auto detector = init_detector(cfg);
 
     ros::NodeHandle n;
     ros::Publisher res_pub = n.advertise<std_msgs::String>("/detection", 1);
-    auto worker_thread = std::thread(worker, detector, &res_pub);
 
+    // for visualize
+    // ros::NodeHandle vnh;
+    // image_transport::ImageTransport it(vnh);
+    image_transport::Publisher vis_pub = it.advertise("/visuazlize", 1);
+
+    auto worker_thread = std::thread(worker, detector, &res_pub, &vis_pub);
     ROS_INFO_STREAM("subscriber started");
     ros::spin();
     worker_stop = true;

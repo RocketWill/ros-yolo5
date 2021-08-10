@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(simple_pub)
+project(camera_driver)
 
 macro(use_cxx11)
   if (CMAKE_VERSION VERSION_LESS "3.1")
@@ -114,14 +114,14 @@ include_directories(
 set(SRC_DIR src)
 
 ## Declare a C++ executable
-add_executable(simple_pub ${SRC_DIR}/simple_pub.cpp)
+add_executable(camera_driver ${SRC_DIR}/camera_driver.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-add_dependencies(simple_pub ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(camera_driver ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(simple_pub
+target_link_libraries(camera_driver
     ${catkin_LIBRARIES}
     ${OpenCV_LIBS}
     )

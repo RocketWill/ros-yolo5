@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>simple_pub</name>
+  <name>camera_driver</name>
   <version>0.0.0</version>
   <description>Standard ROS boilerplate code: C++ and python.</description>
   <maintainer email="felixd@gmail.com">Felix Duvallet</maintainer>

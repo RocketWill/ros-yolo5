@@ -9,7 +9,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3 -Wno-write-strings")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath -Wl,$ORIGIN")
 set(OpenCV_DIR "/home/cy/apps/opencv-4.0.0/build")
 set(SRC_DIR src)
-# include_directories("/home/cy/apps/opencv-4.0.0/build")
 include_directories("./src")
 
 find_package(OpenCV REQUIRED)
@@ -103,10 +102,7 @@ include_directories(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-    #  INCLUDE_DIRS include
-    #  LIBRARIES ros_boilerplate
     CATKIN_DEPENDS roscpp rospy
-    #  DEPENDS system_lib
 )
 
 ###########
