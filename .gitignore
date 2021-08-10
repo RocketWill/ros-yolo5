@@ -1,7 +1,8 @@
 build
 devel
-./setup.py
+setup.py
 .catkin_workspace
 *cache*
 .catkin_tools
 logs
+src/example

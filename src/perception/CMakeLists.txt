@@ -1,17 +1,19 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.1)
 project(perception_node)
+enable_language(CUDA)
 
-macro(use_cxx11)
-  if (CMAKE_VERSION VERSION_LESS "3.1")
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-      set (CMAKE_CXX_FLAGS "--std=gnu++11 ${CMAKE_CXX_FLAGS}")
-    endif ()
-  else ()
-    set (CMAKE_CXX_STANDARD 11)
-  endif ()
-endmacro(use_cxx11)
-use_cxx11()
 
+
+set(CMAKE_CXX_COMPILIER "/usr/bin/g++")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3 -Wno-write-strings")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath -Wl,$ORIGIN")
+set(OpenCV_DIR "/home/cy/apps/opencv-4.0.0/build")
+set(SRC_DIR src)
+# include_directories("/home/cy/apps/opencv-4.0.0/build")
+include_directories("./src")
+
+find_package(OpenCV REQUIRED)
+find_package(CUDA REQUIRED)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -20,10 +22,18 @@ find_package(catkin REQUIRED COMPONENTS
     rospy
     image_transport
     cv_bridge
+    OpenCV
 )
 
-include_directories("/home/cy/apps/opencv-4.0.0/build")
-find_package(OpenCV REQUIRED)
+include_directories(
+    ${OpenCV_INCLUDE_DIRS}
+    ${catkin_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS}
+)
+
+# include_directories("/home/cy/apps/opencv-4.0.0/build")
+# include_directories("/home/cy/apps/opencv-4.0.0/modules/dnn/include")
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -107,11 +117,14 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
-    src/include
     ${catkin_INCLUDE_DIRS}
 )
 
-set(SRC_DIR src)
+#detector lib (cuda)
+file(GLOB_RECURSE sources src/modules/*.hpp src/modules/*.cpp src/modules/*.h src/modules/*.cu src/extra/*.h)
+add_library(detector SHARED ${sources})
+target_include_directories(detector PRIVATE src/extra/ src/modules/ ${OpenCV_INCLUDE_DIRS} ${CUDA_TOOLKIT_ROOT_DIR}/include)
+target_link_libraries(detector nvinfer nvinfer_plugin nvparsers "stdc++fs")
 
 ## Declare a C++ executable
 add_executable(perception_node ${SRC_DIR}/perception_node.cpp)
@@ -119,11 +132,13 @@ add_executable(perception_node ${SRC_DIR}/perception_node.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(perception_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
+target_include_directories(perception_node PRIVATE src/modules/ src/extra/)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(perception_node
     ${catkin_LIBRARIES}
     ${OpenCV_LIBS}
+    detector
+    opencv_dnn
     )
 
 #############
@@ -148,10 +163,10 @@ target_link_libraries(perception_node
 # )
 
 ## Mark cpp header files for installation
-install(DIRECTORY ${SRC_DIR}/include/${PROJECT_NAME}/
-    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-    FILES_MATCHING PATTERN "*.h"
-    )
+# install(DIRECTORY ${SRC_DIR}/include/${PROJECT_NAME}/
+#     DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+#     FILES_MATCHING PATTERN "*.h"
+#     )
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
