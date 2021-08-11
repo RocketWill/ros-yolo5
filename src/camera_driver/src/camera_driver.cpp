@@ -13,7 +13,7 @@ int main(int argc, char **argv){
     ros::NodeHandle nh;
     image_transport::ImageTransport it(nh);
     image_transport::Publisher pub = it.advertise("/camera/raw", 1);
-    ros::Rate rate = ros::Rate(24);
+    ros::Rate rate = ros::Rate(36);
     ROS_INFO_STREAM("publication node started");
 
     VideoCapture cap("/home/cy/apps/tokyo_road.mp4"); 
