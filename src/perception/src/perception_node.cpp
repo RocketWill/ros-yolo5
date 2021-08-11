@@ -10,9 +10,11 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include "json.hpp"
+#include "tictoc.hpp"
 
 #include "class_timer.hpp"
 #include "class_detector.h"
+#include "colors.hpp"
 
 using namespace std;
 using namespace cv;
@@ -26,7 +28,7 @@ vector<BatchResult> batch_res;
 bool visualize = true;
 
 Config init_model_cfg(string cfg_file, string weights_file, string calib_file) {
-    Config config_v5;
+  Config config_v5;
 	config_v5.net_type = YOLOV5;
 	config_v5.detect_thresh = 0.5;
 	config_v5.file_model_cfg = cfg_file;
@@ -51,11 +53,6 @@ json format_res(vector<BatchResult> batch_res) {
         j["score"] = r.prob;
         j["rect"] = {r.rect.x, r.rect.y, r.rect.width, r.rect.height};
         objs.push_back(j);
-        // std::cout <<"batch "<<i<< " id:" << r.id << " prob:" << r.prob << " rect:" << r.rect << std::endl;
-        // cv::rectangle(batch_img[i], r.rect, cv::Scalar(255, 0, 0), 2);
-        // std::stringstream stream;
-        // stream << std::fixed << std::setprecision(2) << "id:" << r.id << "  score:" << r.prob;
-        // cv::putText(batch_img[i], stream.str(), cv::Point(r.rect.x, r.rect.y - 5), 0, 0.5, cv::Scalar(0, 0, 255), 2);
     }
     return objs;
 }
@@ -76,22 +73,22 @@ void worker(Detector* detector, ros::Publisher* pub, image_transport::Publisher*
     try{
       auto img = cv_bridge::toCvShare(msg, "bgr8")->image;
       detector->detect({img}, batch_res);
-      auto res_json = format_res(batch_res);
-      json final_res;
-      final_res["timestamp"] = to_string((msg->header).stamp.toSec());
-      final_res["results"] = res_json;
+      auto res = format_res(batch_res);
+      json ts_res;
+      ts_res["timestamp"] = to_string((msg->header).stamp.toSec());
+      ts_res["results"] = res;
       std_msgs::String smsg;
-      smsg.data = final_res.dump();
-      cout << final_res.dump(4) << endl;
-      pub->publish(msg);
+      smsg.data = ts_res.dump();
+      // cout << final_res.dump(4) << endl;
+      pub->publish(smsg);
 
 
       if (visualize) {
-          for (auto& det: res_json) {
-            cv::rectangle(img, cv::Rect((int)det["rect"][0], (int)det["rect"][1], (int)det["rect"][2], (int)det["rect"][3]), cv::Scalar(255, 0, 0), 2);
+          for (auto& det: res) {
+            cv::rectangle(img, cv::Rect((int)det["rect"][0], (int)det["rect"][1], (int)det["rect"][2], (int)det["rect"][3]), colors[(int)det["id"] % colors.size()], 2);
             std::stringstream stream;
-            stream << std::fixed << std::setprecision(2) << "id:" << det["id"] << "  score:" << det["score"];
-            cv::putText(img, stream.str(), cv::Point((int)det["rect"][0], (int)det["rect"][1] - 5), 0, 0.5, cv::Scalar(0, 0, 255), 2);
+            stream << std::fixed << std::setprecision(2) << "id:" << det["id"] << "  score:" << (double)det["score"];
+            cv::putText(img, stream.str(), cv::Point((int)det["rect"][0], (int)det["rect"][1] - 5), 0, 0.4, cv::Scalar(213, 255, 201), 1);
           }
         sensor_msgs::ImagePtr vmsg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", img).toImageMsg();
         vmsg->header.stamp = msg->header.stamp;
@@ -124,15 +121,16 @@ int main(int argc, char **argv){
     image_transport::ImageTransport it(nh);
     image_transport::Subscriber sub = it.subscribe("/camera/raw", 1, image_callback);
 
-    auto cfg = init_model_cfg("src/perception/src/configs/yolov5-5.0/yolov5s6.cfg", "src/perception/src/configs/yolov5-5.0/yolov5s6.weights", "src/perception/src/configs/calibration_images.txt");
+    auto cfg = init_model_cfg(
+      "src/perception/src/configs/yolov5-5.0/yolov5s6.cfg", 
+      "src/perception/src/configs/yolov5-5.0/yolov5s6.weights", 
+      "src/perception/src/configs/calibration_images.txt"
+    );
     auto detector = init_detector(cfg);
 
     ros::NodeHandle n;
     ros::Publisher res_pub = n.advertise<std_msgs::String>("/detection", 1);
 
-    // for visualize
-    // ros::NodeHandle vnh;
-    // image_transport::ImageTransport it(vnh);
     image_transport::Publisher vis_pub = it.advertise("/visuazlize", 1);
 
     auto worker_thread = std::thread(worker, detector, &res_pub, &vis_pub);

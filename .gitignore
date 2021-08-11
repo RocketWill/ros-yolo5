@@ -6,3 +6,6 @@ setup.py
 .catkin_tools
 logs
 src/example
+*.weights
+*.engine
+*sample*

@@ -13,7 +13,7 @@ int main(int argc, char **argv){
     ros::NodeHandle nh;
     image_transport::ImageTransport it(nh);
     image_transport::Publisher pub = it.advertise("/camera/raw", 1);
-    ros::Rate rate = ros::Rate(12);
+    ros::Rate rate = ros::Rate(24);
     ROS_INFO_STREAM("publication node started");
 
     VideoCapture cap("/home/cy/apps/tokyo_road.mp4"); 
@@ -34,7 +34,7 @@ int main(int argc, char **argv){
         sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", frame).toImageMsg();
         msg->header.stamp = ros::Time::now();
         pub.publish(msg);
-        // rate.sleep();
+        rate.sleep();
         // imwrite("Frame"+to_string(++idx)+".jpg", frame);
     }
     
