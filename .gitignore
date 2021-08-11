@@ -5,7 +5,7 @@ setup.py
 *cache*
 .catkin_tools
 logs
-# src/example
+src/example
 *.weights
 *.engine
 *sample*
