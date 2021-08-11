@@ -2,9 +2,9 @@
 <package>
   <name>perception_node</name>
   <version>0.0.0</version>
-  <description>Standard ROS boilerplate code: C++ and python.</description>
-  <maintainer email="felixd@gmail.com">Felix Duvallet</maintainer>
-  <author email="felixd@gmail.com">Felix Duvallet</author>
+  <description>ROS + Yolov5</description>
+  <maintainer email="chengy@luokung.com">Will Cheng Yong</maintainer>
+  <author email="chengy@luokung.com">Will Cheng Yong</author>
   <license>MIT</license>
 
   <buildtool_depend>catkin</buildtool_depend>
