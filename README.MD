@@ -12,6 +12,13 @@ data: "{\"results\":[{\"id\":0,\"rect\":[945,501,18,35],\"score\":0.521324038505
   }"
 ```
 
+### ROS for Javascript
+1. install `roslib`  
+```
+npm i roslib
+```  
+2. Check [ROS JS example](assets/index.tsx) for more information.
+
 ### Compile Environment
 check below docker image for compiling
 [https://hub.docker.com/repository/docker/willcy1006/tensorrt7.1](https://hub.docker.com/repository/docker/willcy1006/tensorrt7.1)
