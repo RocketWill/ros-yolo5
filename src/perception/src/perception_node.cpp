@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -28,13 +29,13 @@ vector<BatchResult> batch_res;
 bool visualize = true;
 
 Config init_model_cfg(string cfg_file, string weights_file, string calib_file) {
-  Config config_v5;
-	config_v5.net_type = YOLOV5;
-	config_v5.detect_thresh = 0.5;
-	config_v5.file_model_cfg = cfg_file;
-	config_v5.file_model_weights = weights_file;
-	config_v5.calibration_image_list_file_txt = calib_file;
-	config_v5.inference_precison = FP32;
+    Config config_v5;
+    config_v5.net_type = YOLOV5;
+    config_v5.detect_thresh = 0.5;
+    config_v5.file_model_cfg = cfg_file;
+    config_v5.file_model_weights = weights_file;
+    config_v5.calibration_image_list_file_txt = calib_file;
+    config_v5.inference_precison = FP32;
     return config_v5;
 }
 
@@ -95,11 +96,11 @@ void worker(Detector* detector, ros::Publisher* pub, image_transport::Publisher*
         vpub->publish(vmsg);
       }
     }
-    catch (cv_bridge::Exception& e){
+    catch (cv_bridge::Exception& e) {
       ROS_ERROR("Could not convert from '%s', got error :%s", \
         msg->encoding.c_str(), e.what());
     }
-    catch (...){
+    catch (...) {
       ROS_ERROR("predict fail.");
     }
   }
@@ -120,11 +121,13 @@ int main(int argc, char **argv){
     ros::NodeHandle nh;
     image_transport::ImageTransport it(nh);
     image_transport::Subscriber sub = it.subscribe("/camera/raw", 1, image_callback);
+    std::ifstream ifs("src/perception/model.json");
+    json model_cfg = json::parse(ifs);
 
     auto cfg = init_model_cfg(
-      "src/perception/src/configs/yolov5-5.0/yolov5s6.cfg", 
-      "src/perception/src/configs/yolov5-5.0/yolov5s6.weights", 
-      "src/perception/src/configs/calibration_images.txt"
+        model_cfg["cfg"],
+        model_cfg["weights"],
+        model_cfg["calib"]
     );
     auto detector = init_detector(cfg);
 

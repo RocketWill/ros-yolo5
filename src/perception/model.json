@@ -1,0 +1,5 @@
+{
+    "cfg": "/home/cy/yolo-tensorrt/configs/yolov5-5.0/yolov5s6.cfg", 
+    "weights": "/home/cy/yolo-tensorrt/configs/yolov5-5.0/yolov5s6.weights",
+    "calib": "/home/cy/yolo-tensorrt/configs/calibration_images.txt"
+}
